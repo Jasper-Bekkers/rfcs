@@ -17,24 +17,13 @@ Ideally I'd see a way to override build flags for a specific crate and all it's 
 
 When playing around with the feature as it stands now, the proposed syntax was one that I tried naturally so it feels like a logical extension.
 
-To be able to do this cleanly we also need to support full paths in the overrides syntax.
-
-
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
-
 
 ```toml
 # the `image` crate and all it's depenencies will be compiled with -Copt-level=3
 [profile.dev.overrides.image."*"]
 opt-level = 3
-
-# the `inflate` create in the bottom of the `gltf` 
-[profile.dev.overrides.gltf.image.png.inflate]
-opt-level = 3
-
-[profile.dev.overrides.gltf.image.'*']
-opt-level = 0
 ```
 
 # Reference-level explanation
@@ -53,7 +42,7 @@ opt-level = 2
 opt-level = 3
 ```
 
-
+So given that the `gltf` crate has a dependency on `image`, it's `image` and potentially all other referenced `image` crates should be compiled with `opt-level = 3` while the rest of the `gltf` crate should be compiled with `opt-level = 2`.
 
 # Drawbacks
 [drawbacks]: #drawbacks
@@ -64,9 +53,11 @@ This complicates the build rules and cargo.
 [rationale-and-alternatives]: #rationale-and-alternatives
 
 - One alternative would be to make the syntax `[profile.dev.overrides.image]` match the `image` crate and all of it's dependencies.
+- Usually when running debug builds you don't care about the debuggability of your dependant crates, but right now the only way to state that intent as it stands per RFC 2282 the only way to control this is to either opt to build all of your dependencies with the same settings and then opt-out for the ones you'd like to debug or to individually opt in to most dependant crates (and their dependencies ... ad-infinitium). Both aren't really ergonomic to use but at least offer the possibility to do specific tweaks.
+
 
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
 - Should the proposed syntax match the crate and all it's dependencies, or should it only match the dependencies of the crate. The proposal now matches the crate and it's dependencies.
-- How should we handle the following case:
+- Should we support a full path syntax such that you can tweak dependencies of crates easily? For example: `[profile.dev.override.gltf.image.png.inflate]`. This seems to be an intuitive extension; but it's counter to how cargo works & flattens it's dependencies.
